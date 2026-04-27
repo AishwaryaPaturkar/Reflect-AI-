@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflect AI — Friends of Figma Pune</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/rough.js/4.6.6/rough.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808; --teal: #0D9488; --teal2: #0ABFA3; --lime: #84CC16;
+    --white: #FFFFFF; --gray: #9CA3AF; --dim: #374151; --amber: #F59E0B;
+    --red: #EF4444; --card: #111111; --card2: #1A1A1A;
+  }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+  body { font-family: 'Syne', sans-serif; color: var(--white); }
+
+  /* ── SLIDE SYSTEM ── */
+  #deck { position: fixed; inset: 0; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 4vh 5vw;
+    opacity: 0; pointer-events: none;
+    transform: translateX(80px);
+    transition: opacity .55s cubic-bezier(.4,0,.2,1), transform .55s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.exit { opacity: 0; transform: translateX(-80px); }
+
+  /* ── NAV ── */
+  #nav {
+    position: fixed; bottom: 2.5vh; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 1rem; z-index: 100;
+  }
+  .nav-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--dim); transition: all .3s; cursor: pointer;
+  }
+  .nav-dot.active { background: var(--teal2); transform: scale(1.4); }
+  #slide-counter {
+    position: fixed; top: 2vh; right: 2.5vw;
+    font-family: 'Caveat', cursive; font-size: 1.1rem;
+    color: var(--dim); z-index: 100;
+  }
+  #nav-arrows {
+    position: fixed; bottom: 2.5vh; right: 2.5vw;
+    display: flex; gap: .5rem; z-index: 100;
+  }
+  .arr-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--card2); border: 1.5px solid var(--dim);
+    color: var(--gray); font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .arr-btn:hover { border-color: var(--teal2); color: var(--teal2); }
+
+  /* ── TYPOGRAPHY ── */
+  .giant { font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1.0; letter-spacing: -.03em; }
+  .big { font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+  .hand { font-family: 'Caveat', cursive; }
+  .tag { font-family: 'Caveat', cursive; font-size: 1.1rem; color: var(--teal2); letter-spacing: .05em; }
+  .muted { color: var(--gray); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes pop { 0%{transform:scale(.5);opacity:0;} 60%{transform:scale(1.08);} 100%{transform:scale(1);opacity:1;} }
+  @keyframes wiggle { 0%,100%{transform:rotate(-1deg);} 50%{transform:rotate(1deg);} }
+  @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  @keyframes drawIn { from{stroke-dashoffset:var(--len);} to{stroke-dashoffset:0;} }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  @keyframes float { 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-12px) rotate(2deg);} }
+  @keyframes scribbleIn { from{width:0;} to{width:100%;} }
+  @keyframes countUp { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:none;} }
+  @keyframes slideRight { from{transform:translateX(-40px);opacity:0;} to{transform:none;opacity:1;} }
+  @keyframes slideLeft { from{transform:translateX(40px);opacity:0;} to{transform:none;opacity:1;} }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+  @keyframes penDraw { from{stroke-dashoffset:1000;} to{stroke-dashoffset:0;} }
+
+  .anim-up { opacity:0; }
+  .anim-up.go { animation: fadeUp .6s ease forwards; }
+  .anim-pop { opacity:0; }
+  .anim-pop.go { animation: pop .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+  .anim-right { opacity:0; }
+  .anim-right.go { animation: slideRight .6s ease forwards; }
+  .anim-left { opacity:0; }
+  .anim-left.go { animation: slideLeft .6s ease forwards; }
+
+  /* ── DOODLE ELEMENTS ── */
+  .rough-wrap { position: relative; }
+  .rough-wrap canvas { position: absolute; inset: 0; pointer-events: none; }
+  .rough-content { position: relative; z-index: 1; }
+
+  /* squiggly underline */
+  .squig {
+    display: inline; position: relative;
+  }
+  .squig::after {
+    content: '';
+    position: absolute; left: 0; bottom: -4px;
+    height: 3px; width: 0;
+    background: var(--lime);
+    clip-path: url(#squig);
+    transition: width .8s ease;
+  }
+  .squig.show::after { width: 100%; }
+
+  /* doodle card */
+  .dcard {
+    position: relative; border-radius: 4px;
+    padding: 1.5rem;
+  }
+  .dcard svg.frame {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+  }
+
+  /* thought bubble */
+  .thought-bubble {
+    position: absolute;
+    font-family: 'Caveat', cursive;
+    background: var(--card2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: 1rem; color: var(--teal2);
+    border: 2px solid var(--teal);
+  }
+
+  /* animated path svg */
+  .path-draw {
+    stroke-dasharray: var(--len, 1000);
+    stroke-dashoffset: var(--len, 1000);
+  }
+  .path-draw.go {
+    animation: penDraw 1.5s ease forwards;
+  }
+
+  /* ── SLIDE-SPECIFIC ── */
+
+  /* S1 Cover */
+  #s1 { justify-content: flex-end; }
+  #s1 .headline { font-size: clamp(3.5rem, 8vw, 7rem); }
+  #brain-svg { position: absolute; right: -2vw; top: -5vh; width: 52vw; height: 85vh; opacity: .9; }
+  #brain-svg path, #brain-svg circle { fill: none; }
+
+  /* S2 */
+  #s2 .qtext { font-size: clamp(2.8rem, 6vw, 5.5rem); line-height: 1.1; }
+
+  /* S3 big numbers */
+  .contra-num { font-family:'Syne',sans-serif; font-weight:800; font-size:clamp(5rem,14vw,11rem); line-height:1; letter-spacing:-.04em; }
+
+  /* S5 segment cards */
+  .seg-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; flex: 1; margin-top: 1rem; }
+  .seg-card-inner { height: 100%; display: flex; flex-direction: column; gap: .5rem; }
+  .seg-emoji { font-size: 2.5rem; margin-bottom: .3rem; }
+  .seg-name { font-family:'Syne',sans-serif; font-weight:800; font-size:1.15rem; line-height:1.2; }
+  .seg-tag { font-family:'Caveat',cursive; font-size:1rem; color:var(--gray); }
+
+  /* S9 modes */
+  .mode-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; flex: 1; margin-top: 1rem; }
+
+  /* S11 WIP dots */
+  .wip-rail { display: flex; align-items: center; gap: 0; justify-content: center; margin: 1.5rem 0; }
+  .wip-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+  .wip-step::before { content: ''; position: absolute; top: 19px; left: 50%; width: 100%; height: 2px; background: var(--dim); z-index: 0; }
+  .wip-step:last-child::before { display: none; }
+  .wip-dot { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--dim); background: var(--card); display: flex; align-items: center; justify-content: center; font-size: .9rem; position: relative; z-index: 1; transition: all .4s; }
+  .wip-dot.done { border-color: var(--teal2); background: #0D1F1F; color: var(--teal2); }
+  .wip-dot.here { border-color: var(--lime); background: #0D2B0D; animation: pulse 2s infinite; }
+  .wip-label { font-family:'Caveat',cursive; font-size:.95rem; margin-top: .4rem; color: var(--gray); }
+  .wip-label.done { color: var(--teal2); }
+  .wip-label.here { color: var(--lime); }
+
+  /* quote block */
+  .qblock { border-left: 3px solid var(--teal); padding: .8rem 1rem; background: rgba(13,148,136,.07); border-radius: 0 8px 8px 0; margin-bottom: .75rem; }
+  .qblock p { font-family:'Caveat',cursive; font-size:1.2rem; color:var(--white); line-height:1.5; margin-bottom:.3rem; }
+  .qblock cite { font-family:'Caveat',cursive; font-size:.95rem; color:var(--teal2); font-style:normal; }
+
+  /* HMW rows */
+  .hmw-row { display: flex; align-items: flex-start; gap: .75rem; padding: .85rem 1rem; background: var(--card); border-radius: 8px; margin-bottom: .65rem; }
+  .hmw-label { font-family:'Caveat',cursive; font-size:.9rem; color: var(--teal2); white-space: nowrap; margin-top: .1rem; }
+  .hmw-text { font-family:'Syne',sans-serif; font-weight:700; font-size:1.05rem; color:var(--white); line-height:1.4; }
+
+  /* stat block */
+  .stat-block { background: var(--card); border-radius: 8px; padding: 1.25rem; position: relative; }
+  .stat-n { font-family:'Syne',sans-serif; font-weight:800; font-size:3.5rem; line-height:1; letter-spacing:-.04em; }
+  .stat-l { font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; margin-top:.35rem; }
+  .stat-s { font-family:'Caveat',cursive; font-size:.95rem; color:var(--gray); margin-top:.2rem; }
+
+  /* floating label */
+  .flab { font-family:'Caveat',cursive; font-size:.85rem; color:var(--teal2); position:absolute; }
+
+  /* chat bubbles */
+  .chat-bub { border-radius: 18px; padding: .6rem 1rem; font-family:'Caveat',cursive; font-size:1.05rem; display:inline-block; max-width: 75%; }
+  .chat-bub.user { background:var(--card2); color:var(--gray); border:1.5px solid var(--dim); align-self:flex-start; }
+  .chat-bub.ai { background: #0D2B1A; border:1.5px solid var(--teal); color:var(--white); align-self:flex-end; }
+  .chat-bub.user-reply { background: #1A2B0D; border:1.5px solid var(--lime); color:var(--white); align-self:flex-start; }
+  .chat-col { display:flex; flex-direction:column; gap:.6rem; }
+
+  /* progress dot wip */
+  .wip-here-label { font-family:'Caveat',cursive; font-size:.9rem; color:var(--lime); margin-top:.2rem; animation: blink 1.5s infinite; }
+
+  /* closing cards */
+  .cta-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-top:1rem; }
+  .cta-card { background:var(--card); border-radius:8px; padding:1.1rem; }
+  .cta-card p { font-family:'Caveat',cursive; font-size:1.05rem; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<!-- Squiggle filter -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="squiggle-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.065" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="deck">
+
+<!-- ═══ SLIDE 1 — COVER ══════════════════════════════════════════════════════ -->
+<section class="slide" id="s1" data-slide="1">
+
+  <!-- Animated brain SVG -->
+  <svg id="brain-svg" viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg">
+    <!-- outer brain left -->
+    <path class="path-draw" style="--len:900" id="b1"
+      d="M250 100 C210 80 165 88 145 125 C122 105 90 112 80 145 C58 138 42 162 48 190 C28 196 22 224 38 242 C20 258 26 292 52 298 C42 320 54 348 80 354 C85 388 112 410 145 404 C160 436 194 448 222 432 C238 454 248 458 250 448"
+      stroke="#0ABFA3" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <!-- outer brain right -->
+    <path class="path-draw" style="--len:900" id="b2"
+      d="M250 100 C290 80 335 88 355 125 C378 105 410 112 420 145 C442 138 458 162 452 190 C472 196 478 224 462 242 C480 258 474 292 448 298 C458 320 446 348 420 354 C415 388 388 410 355 404 C340 436 306 448 278 432 C262 454 252 458 250 448"
+      stroke="#0ABFA3" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <!-- center line -->
+    <path class="path-draw" style="--len:400" id="b3"
+      d="M250 100 L250 448"
+      stroke="#0ABFA3" stroke-width="4" stroke-dasharray="10 8" fill="none"/>
+    <!-- ridges left -->
+    <path class="path-draw" style="--len:120" id="b4" d="M188 175 C172 198 176 226 195 238" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <path class="path-draw" style="--len:120" id="b5" d="M165 258 C155 285 164 312 184 322" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <path class="path-draw" style="--len:120" id="b6" d="M150 348 C148 374 168 390 190 384" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <!-- ridges right -->
+    <path class="path-draw" style="--len:120" id="b7" d="M312 175 C328 198 324 226 305 238" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <path class="path-draw" style="--len:120" id="b8" d="M335 258 C345 285 336 312 316 322" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <path class="path-draw" style="--len:120" id="b9" d="M350 348 C352 374 332 390 310 384" stroke="#0ABFA3" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
+    <!-- glow dots -->
+    <circle class="anim-pop" id="bd1" cx="200" cy="148" r="8" fill="#84CC16"/>
+    <circle class="anim-pop" id="bd2" cx="312" cy="195" r="6" fill="#84CC16"/>
+    <circle class="anim-pop" id="bd3" cx="180" cy="280" r="5" fill="#0ABFA3"/>
+    <circle class="anim-pop" id="bd4" cx="335" cy="316" r="7" fill="#84CC16"/>
+    <circle class="anim-pop" id="bd5" cx="250" cy="230" r="10" fill="#0ABFA3"/>
+    <!-- circuit lines from center dot -->
+    <line class="path-draw" style="--len:60" id="bl1" x1="250" y1="230" x2="200" y2="148" stroke="#84CC16" stroke-width="1.5" opacity=".5"/>
+    <line class="path-draw" style="--len:60" id="bl2" x1="250" y1="230" x2="312" y2="195" stroke="#84CC16" stroke-width="1.5" opacity=".5"/>
+  </svg>
+
+  <div style="position:relative; z-index:2; max-width:52%;">
+    <div class="tag anim-up" id="s1-tag" style="margin-bottom:1.2rem">friends of figma · pune · 2026</div>
+    <h1 class="headline giant anim-up" id="s1-h" style="font-size:clamp(3rem,7.5vw,6.5rem)">
+      I was scared<br>AI was eating<br>my brain 🧠
+    </h1>
+    <p class="anim-up muted" id="s1-sub" style="font-family:'Caveat',cursive; font-size:1.5rem; margin-top:1.2rem; font-style:italic;">
+      So I designed something about it.
+    </p>
+
+    <!-- Reflect AI badge (rough.js renders here) -->
+    <div id="s1-badge" class="anim-up" style="margin-top:2rem; position:relative; width:fit-content; padding:1rem 1.5rem;">
+      <canvas id="badge-canvas" style="position:absolute;inset:0;"></canvas>
+      <div style="position:relative; z-index:1;">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;color:white;">Reflect AI</div>
+        <div style="font-family:'Caveat',cursive;font-size:1rem;color:#0ABFA3">Human-First AI Thinking Tool</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- floating doodle labels -->
+  <div class="flab anim-pop" id="flab1" style="right:6vw;bottom:12vh;transform:rotate(-5deg);font-size:1rem;opacity:.6">
+    (work in progress btw)
+  </div>
+</section>
+
+<!-- ═══ SLIDE 2 — THE HOOK ═══════════════════════════════════════════════════ -->
+<section class="slide" id="s2" data-slide="2">
+
+  <div class="tag anim-up" id="s2-tag">quick question.</div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:4vw; flex:1; align-items:center; margin-top:1rem;">
+    <div>
+      <h2 class="qtext big anim-up" id="s2-h" style="font-size:clamp(2.5rem,5.5vw,5rem);">
+        When's the last time<br>you started a task<br><span style="color:var(--teal2)">without opening<br>AI first?</span>
+      </h2>
+      <p class="anim-up" id="s2-foot" style="font-family:'Caveat',cursive;font-size:1.3rem;color:var(--gray);margin-top:1.5rem;font-style:italic;">
+        Take a moment. Actually think about it.
+      </p>
+    </div>
+
+    <!-- Doodle person at laptop -->
+    <div style="position:relative; display:flex; justify-content:center; align-items:center;">
+      <svg id="person-svg" viewBox="0 0 340 380" width="340" height="380" style="filter:url(#squiggle-filter)">
+        <!-- laptop -->
+        <rect x="60" y="220" width="220" height="130" rx="10" fill="#111" stroke="#0ABFA3" stroke-width="3"/>
+        <!-- screen -->
+        <rect x="74" y="232" width="192" height="100" rx="5" fill="#0A1A1A"/>
+        <!-- chat bubbles on screen (animate in) -->
+        <rect class="path-draw" style="--len:300" x="84" y="245" width="90" height="22" rx="8" fill="#0D9488" opacity=".9"/>
+        <text x="90" y="261" font-family="Caveat" font-size="11" fill="white">Think first...</text>
+        <rect class="path-draw" style="--len:300" x="110" y="275" width="120" height="22" rx="8" fill="#1A1A1A" stroke="#0ABFA3" stroke-width="1.5"/>
+        <text x="116" y="291" font-family="Caveat" font-size="11" fill="#9CA3AF">What do YOU think?</text>
+        <rect class="path-draw" style="--len:300" x="84" y="305" width="100" height="20" rx="8" fill="#84CC16" opacity=".15" stroke="#84CC16" stroke-width="1"/>
+        <text x="90" y="319" font-family="Caveat" font-size="10" fill="#84CC16">Hmm let me try...</text>
+        <!-- base -->
+        <ellipse cx="170" cy="354" rx="130" ry="8" fill="#0D9488" opacity=".2"/>
+        <rect x="40" y="346" width="260" height="8" rx="4" fill="#1A1A1A"/>
+        <!-- person body -->
+        <path d="M150 188 C138 195 128 212 128 228 L212 228 C212 212 202 195 190 188 C180 182 174 179 170 179 C166 179 160 182 150 188Z" fill="#1A2828" stroke="#0ABFA3" stroke-width="2.5"/>
+        <!-- head -->
+        <circle cx="170" cy="128" r="48" fill="#1A2828" stroke="#0ABFA3" stroke-width="3"/>
+        <circle cx="158" cy="120" r="6" fill="#0ABFA3"/>
+        <circle cx="182" cy="120" r="6" fill="#0ABFA3"/>
+        <path d="M161 144 Q170 155 179 144" fill="none" stroke="#0ABFA3" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+
+      <!-- Thought bubbles (animate in separately) -->
+      <div class="thought-bubble anim-pop" id="tb1" style="width:36px;height:36px;right:28%;top:8%;font-size:.7rem;">?</div>
+      <div class="thought-bubble anim-pop" id="tb2" style="width:48px;height:48px;right:18%;top:2%;font-size:.9rem;">!</div>
+      <div class="thought-bubble anim-pop" id="tb3" style="width:62px;height:62px;right:6%;top:-3%;font-size:1rem;animation:float 3s ease-in-out infinite;">💡</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 3 — THE BIG CONTRADICTION ════════════════════════════════════ -->
+<section class="slide" id="s3" data-slide="3">
+  <div class="tag anim-up" id="s3-tag">here's what 51 people told me.</div>
+
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:1.5rem;flex:1;align-items:center;margin-top:1.5rem;">
+
+    <!-- Left -->
+    <div class="anim-right" id="s3-left" style="position:relative;padding:2rem;text-align:center;">
+      <canvas id="contra-l-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div class="hand" style="font-size:1rem;color:var(--teal2);letter-spacing:.1em;margin-bottom:.5rem;">WHAT THEY BELIEVE</div>
+        <div class="contra-num" style="color:var(--teal2);" id="n80">80%</div>
+        <div class="big" style="font-size:1.1rem;margin:.6rem 0;">say they think first,<br>then open AI</div>
+        <div class="hand muted" style="font-size:.95rem;font-style:italic;">self-reported</div>
+      </div>
+    </div>
+
+    <!-- VS -->
+    <div class="anim-pop" id="s3-vs">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:3rem;color:var(--lime);line-height:1;">≠</div>
+    </div>
+
+    <!-- Right -->
+    <div class="anim-left" id="s3-right" style="position:relative;padding:2rem;text-align:center;">
+      <canvas id="contra-r-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div class="hand" style="font-size:1rem;color:var(--amber);letter-spacing:.1em;margin-bottom:.5rem;">WHAT THEY ACTUALLY DO</div>
+        <div class="contra-num" style="color:var(--amber);" id="n88">88%</div>
+        <div class="big" style="font-size:1.1rem;margin:.6rem 0;">stopped mid-task<br>to ask AI they could've solved</div>
+        <div class="hand muted" style="font-size:.95rem;font-style:italic;">behavioral data</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-up" id="s3-foot" style="text-align:center;margin-bottom:2vh;">
+    <div style="display:inline-block;position:relative;padding:.7rem 2rem;">
+      <canvas id="foot-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <span class="big" style="position:relative;z-index:1;font-size:1.1rem;color:var(--lime);">
+        This gap isn't laziness. It's not even conscious. It's a blind spot.
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 4 — REAL WORDS ════════════════════════════════════════════════ -->
+<section class="slide" id="s4" data-slide="4">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4vw;flex:1;align-items:start;margin-top:1rem;">
+
+    <!-- Left: doodle chat -->
+    <div>
+      <h2 class="big anim-up" id="s4-h" style="font-size:clamp(1.8rem,3.5vw,2.8rem);margin-bottom:1.5rem;">
+        I ran 4 interviews.<br><span style="color:var(--teal2)">Here's what people<br>actually said.</span>
+      </h2>
+
+      <div class="chat-col anim-up" id="s4-chat">
+        <div class="chat-bub user">Write my email for me</div>
+        <div class="chat-bub ai">
+          What do YOU want to say? Try it first — I'll help you make it better after. 🤔
+        </div>
+        <div class="chat-bub user-reply">
+          Ok... I want to say that I appreciate their hard work on the project...
+        </div>
+        <div class="chat-bub ai">Great start! Here's how we make that land better →</div>
+      </div>
+      <div class="hand anim-up" id="s4-label" style="font-size:.9rem;color:var(--teal2);margin-top:.75rem;opacity:.7;">↑ this is what Reflect AI looks like</div>
+    </div>
+
+    <!-- Right: quotes -->
+    <div style="display:flex;flex-direction:column;justify-content:center;">
+      <div class="qblock anim-up" id="q1" style="animation-delay:.1s">
+        <p>"I'm in a toxic relationship with AI. I cannot survive without it — literally for every task."</p>
+        <cite>— Design student · 20</cite>
+      </div>
+      <div class="qblock anim-up" id="q2" style="animation-delay:.3s">
+        <p>"At the moment it feels good. But later I feel I didn't learn deeply."</p>
+        <cite>— UX Designer · 28</cite>
+      </div>
+      <div class="qblock anim-up" id="q3" style="animation-delay:.5s">
+        <p>"AI should ask me a question first so I get an idea — then help me. Right now it just gives answers."</p>
+        <cite>— Student researcher · 26</cite>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 5 — 4 TYPES ════════════════════════════════════════════════════ -->
+<section class="slide" id="s5" data-slide="5">
+  <div class="anim-up" id="s5-tag2" style="font-family:'Caveat',cursive;font-size:1.1rem;color:var(--gray);font-style:italic;">
+    After the research, I found 4 types of people in this room right now.
+  </div>
+
+  <div class="seg-grid" style="margin-top:1.2rem;">
+    <div class="anim-pop" id="seg1" style="position:relative;padding:1.5rem;">
+      <canvas id="seg1-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="seg-card-inner" style="position:relative;z-index:1;">
+        <div class="seg-emoji" style="animation:wiggle 2s ease-in-out infinite;">😬</div>
+        <div class="hand" style="font-size:.75rem;color:var(--teal2);letter-spacing:.1em;">01</div>
+        <div class="seg-name">The Self-Aware<br>Dependent</div>
+        <div class="seg-tag">Knows it. Feels guilty.<br>Hasn't changed yet.</div>
+        <div style="margin-top:auto;padding-top:.5rem;">
+          <span class="hand" style="font-size:.8rem;background:rgba(13,148,136,.15);color:var(--teal2);padding:.2rem .5rem;border-radius:4px;">★ primary target</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="anim-pop" id="seg2" style="position:relative;padding:1.5rem;animation-delay:.15s">
+      <canvas id="seg2-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="seg-card-inner" style="position:relative;z-index:1;">
+        <div class="seg-emoji" style="animation:wiggle 2.2s ease-in-out infinite .3s;">🤷</div>
+        <div class="hand" style="font-size:.75rem;color:var(--amber);letter-spacing:.1em;">02</div>
+        <div class="seg-name">The Unconscious<br>Habit User</div>
+        <div class="seg-tag">Thinks they're fine.<br>They're not.</div>
+      </div>
+    </div>
+
+    <div class="anim-pop" id="seg3" style="position:relative;padding:1.5rem;animation-delay:.3s">
+      <canvas id="seg3-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="seg-card-inner" style="position:relative;z-index:1;">
+        <div class="seg-emoji" style="animation:bounce 2s ease-in-out infinite .1s;">🧠</div>
+        <div class="hand" style="font-size:.75rem;color:var(--lime);letter-spacing:.1em;">03</div>
+        <div class="seg-name">The Intentional<br>User</div>
+        <div class="seg-tag">Has rules. Mostly<br>sticks to them.</div>
+      </div>
+    </div>
+
+    <div class="anim-pop" id="seg4" style="position:relative;padding:1.5rem;animation-delay:.45s">
+      <canvas id="seg4-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div class="seg-card-inner" style="position:relative;z-index:1;">
+        <div class="seg-emoji" style="animation:wiggle 1.8s ease-in-out infinite .5s;">😰</div>
+        <div class="hand" style="font-size:.75rem;color:var(--red);letter-spacing:.1em;">04</div>
+        <div class="seg-name">The Anxious<br>Dependent</div>
+        <div class="seg-tag">Knows it. Tried<br>to stop. Failed.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-up" id="s5-q" style="text-align:center;margin-top:1rem;font-family:'Caveat',cursive;font-size:1.4rem;color:var(--lime);font-weight:700;animation:pulse 2s infinite;">
+    Which one are you? 👀
+  </div>
+</section>
+
+<!-- ═══ SLIDE 6 — THE NUMBERS ════════════════════════════════════════════════ -->
+<section class="slide" id="s6" data-slide="6">
+  <div class="tag anim-up" id="s6-tag">the numbers that made me stop scrolling my survey results.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;flex:1;margin-top:1.2rem;">
+    <div class="stat-block anim-up" id="stat1" style="border-left:4px solid var(--teal2)">
+      <div class="stat-n" style="color:var(--teal2);" id="cnt92">92%</div>
+      <div class="stat-l">want AI to help them<br>think <em style="color:var(--teal2);font-style:normal;">BETTER</em></div>
+      <div class="stat-s">not just answer faster</div>
+    </div>
+    <div class="stat-block anim-up" id="stat2" style="border-left:4px solid var(--lime);animation-delay:.15s">
+      <div class="stat-n" style="color:var(--lime);" id="cnt76">76%</div>
+      <div class="stat-l">are open to<br>'think first' prompting</div>
+      <div class="stat-s">before seeing an answer</div>
+    </div>
+    <div class="stat-block anim-up" id="stat3" style="border-left:4px solid var(--amber);animation-delay:.3s">
+      <div class="stat-n" style="color:var(--amber);" id="cnt57">57%</div>
+      <div class="stat-l">feel guilty about<br>their AI use</div>
+      <div class="stat-s">but only 4/51 actually cut back</div>
+    </div>
+    <div class="stat-block anim-up" id="stat4" style="border-left:4px solid var(--red);animation-delay:.45s">
+      <div class="stat-n" style="color:var(--red);" id="cnt0">0</div>
+      <div class="stat-l">existing AI tools<br>encourage thinking first</div>
+      <div class="stat-s">ChatGPT · Gemini · Copilot · Claude</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 7 — THE INSIGHT ════════════════════════════════════════════════ -->
+<section class="slide" id="s7" data-slide="7">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4vw;flex:1;align-items:center;">
+    <!-- Flow diagram doodle -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;">
+
+      <svg id="flow-svg" viewBox="0 0 400 280" width="100%" style="max-width:420px;max-height:38vh;">
+        <!-- Person 1 (you, faded) -->
+        <circle cx="65" cy="70" r="42" fill="#0D1A1A" stroke="#0ABFA3" stroke-width="3"/>
+        <circle cx="56" cy="60" r="5" fill="#0ABFA3" opacity=".8"/>
+        <circle cx="74" cy="60" r="5" fill="#0ABFA3" opacity=".8"/>
+        <path d="M58 82 Q65 92 72 82" fill="none" stroke="#0ABFA3" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M44 112 C35 118 28 133 28 150 L102 150 C102 133 95 118 86 112 C77 106 71 103 65 103 C59 103 53 106 44 112Z" fill="#0D1A1A" stroke="#0ABFA3" stroke-width="2"/>
+        <text x="65" y="175" font-family="Caveat" font-size="14" fill="#0ABFA3" text-anchor="middle">You think</text>
+
+        <!-- Arrow 1 (draw on) -->
+        <path class="path-draw" style="--len:120" id="arr1"
+          d="M115 110 C145 90 165 95 185 110" fill="none" stroke="#4B5563" stroke-width="2" stroke-dasharray="5,4"/>
+        <polygon points="185,104 200,110 185,116" fill="#4B5563" opacity="0"/>
+
+        <!-- Reflect AI box -->
+        <rect x="200" y="80" width="80" height="58" rx="10" fill="#0D9488"/>
+        <text x="240" y="106" font-family="Caveat" font-size="13" fill="white" text-anchor="middle">Reflect</text>
+        <text x="240" y="124" font-family="Caveat" font-size="13" fill="white" text-anchor="middle">AI</text>
+        <circle cx="240" cy="138" r="7" fill="#84CC16"/>
+
+        <!-- Arrow 2 -->
+        <path class="path-draw" style="--len:120" id="arr2"
+          d="M285 110 C305 95 325 100 340 115" fill="none" stroke="#84CC16" stroke-width="2.5" stroke-dasharray="5,4"/>
+        <polygon points="338,109 353,115 338,121" fill="#84CC16" opacity="0"/>
+
+        <!-- Person 2 (glowing, sharper) -->
+        <circle cx="355" cy="70" r="42" fill="#0D2B0D" stroke="#84CC16" stroke-width="3"/>
+        <circle cx="346" cy="60" r="5" fill="#84CC16"/>
+        <circle cx="364" cy="60" r="5" fill="#84CC16"/>
+        <path d="M348 82 Q355 95 362 82" fill="none" stroke="#84CC16" stroke-width="3" stroke-linecap="round"/>
+        <!-- sparkles -->
+        <text x="310" y="35" font-size="16">✨</text>
+        <text x="368" y="28" font-size="12">⚡</text>
+        <path d="M334 112 C325 118 318 133 318 150 L392 150 C392 133 385 118 376 112 C367 106 361 103 355 103 C349 103 343 106 334 112Z" fill="#0D2B0D" stroke="#84CC16" stroke-width="2.5"/>
+        <text x="355" y="175" font-family="Caveat" font-size="14" fill="#84CC16" text-anchor="middle">You, sharper</text>
+
+        <!-- Caption -->
+        <text x="200" y="220" font-family="Caveat" font-size="13" fill="#6B7280" text-anchor="middle">Your thinking goes in. Better thinking comes out.</text>
+      </svg>
+
+      <!-- Doodle arrow pointing to quote -->
+      <div class="hand anim-up" id="s7-arrow" style="font-size:1rem;color:var(--gray);font-style:italic;text-align:center;">
+        this came from the research ↑
+      </div>
+    </div>
+
+    <!-- Big quote right -->
+    <div class="anim-up" id="s7-q">
+      <div style="font-family:'Syne',sans-serif;font-size:5rem;color:var(--teal);line-height:.8;margin-bottom:.5rem;">"</div>
+      <div class="big" style="font-size:clamp(1.3rem,2.5vw,2rem);line-height:1.4;color:var(--white);">
+        People don't want to use AI <em style="color:var(--white);font-style:normal;text-decoration:underline;text-decoration-color:var(--teal2);">less.</em>
+        <br><br>
+        They want to use it in a way that doesn't make them feel
+        <em style="color:var(--lime);font-style:normal;">dumb.</em>
+      </div>
+      <div class="hand" style="font-size:1.2rem;color:var(--teal2);margin-top:1.5rem;font-style:italic;">
+        That's the design brief. Right there.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 8 — REFLECT AI REVEAL ════════════════════════════════════════ -->
+<section class="slide" id="s8" data-slide="8" style="background:linear-gradient(135deg,#0D2B2A 0%,#0A3830 50%,#093030 100%);">
+
+  <!-- Animated circles bg -->
+  <div style="position:absolute;top:-10vh;right:-5vw;width:50vw;height:50vw;border-radius:50%;background:rgba(13,148,136,.15);pointer-events:none;animation:pulse 4s ease-in-out infinite;"></div>
+  <div style="position:absolute;bottom:-10vh;left:-5vw;width:35vw;height:35vw;border-radius:50%;background:rgba(132,204,22,.08);pointer-events:none;animation:pulse 5s ease-in-out infinite .5s;"></div>
+
+  <div style="position:relative;z-index:1;flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="hand anim-up" id="s8-pre" style="font-size:1.4rem;color:rgba(204,251,241,.8);margin-bottom:.5rem;font-style:italic;">
+      So I'm building
+    </div>
+    <div class="giant anim-pop" id="s8-name" style="font-size:clamp(4rem,11vw,9rem);color:white;line-height:.95;margin-bottom:1rem;">
+      Reflect AI
+    </div>
+    <div class="big anim-up" id="s8-tag2" style="font-size:clamp(1.4rem,3vw,2.4rem);color:white;line-height:1.3;max-width:700px;">
+      AI that makes you
+      <span style="color:var(--lime);">smarter,</span><br>
+      not just faster.
+    </div>
+    <div class="hand anim-up" id="s8-sub" style="font-size:1.3rem;color:rgba(204,251,241,.8);margin-top:1.5rem;font-style:italic;">
+      🧠  Think First.  ·  AI Second.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 9 — 3 MODES ════════════════════════════════════════════════════ -->
+<section class="slide" id="s9" data-slide="9">
+  <div class="hand anim-up" id="s9-tag" style="font-size:1.1rem;color:var(--gray);font-style:italic;">
+    It works in 3 modes. You choose the relationship.
+  </div>
+
+  <div class="mode-grid" style="margin-top:1.2rem;">
+    <div class="anim-pop" id="mode1" style="position:relative;padding:1.75rem;display:flex;flex-direction:column;gap:.65rem;">
+      <canvas id="mode1-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div style="font-size:2.8rem;animation:bounce 2s ease-in-out infinite;">🤔</div>
+        <div class="hand" style="font-size:.8rem;color:var(--teal2);letter-spacing:.1em;margin-top:.4rem;">MODE 01</div>
+        <div class="big" style="font-size:1.8rem;color:var(--teal2);">Learn</div>
+        <div class="hand" style="font-size:1.05rem;color:white;font-style:italic;line-height:1.4;margin:.4rem 0;">AI asks questions.<br>You think first.</div>
+        <div style="height:1px;background:var(--dim);margin:.6rem 0;"></div>
+        <div class="hand muted" style="font-size:.9rem;line-height:1.5;">No answers until you've attempted it yourself. Like a coach, not a search engine.</div>
+      </div>
+    </div>
+
+    <div class="anim-pop" id="mode2" style="position:relative;padding:1.75rem;display:flex;flex-direction:column;gap:.65rem;animation-delay:.15s">
+      <canvas id="mode2-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div style="font-size:2.8rem;animation:bounce 2.2s ease-in-out infinite .3s;">🤝</div>
+        <div class="hand" style="font-size:.8rem;color:var(--lime);letter-spacing:.1em;margin-top:.4rem;">MODE 02</div>
+        <div class="big" style="font-size:1.8rem;color:var(--lime);">Assist</div>
+        <div class="hand" style="font-size:1.05rem;color:white;font-style:italic;line-height:1.4;margin:.4rem 0;">You share thinking.<br>AI makes it better.</div>
+        <div style="height:1px;background:var(--dim);margin:.6rem 0;"></div>
+        <div class="hand muted" style="font-size:.9rem;line-height:1.5;">Your idea leads. AI refines and extends it. You stay the author.</div>
+      </div>
+    </div>
+
+    <div class="anim-pop" id="mode3" style="position:relative;padding:1.75rem;display:flex;flex-direction:column;gap:.65rem;animation-delay:.3s">
+      <canvas id="mode3-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div style="font-size:2.8rem;animation:bounce 1.8s ease-in-out infinite .1s;">⚡</div>
+        <div class="hand" style="font-size:.8rem;color:var(--amber);letter-spacing:.1em;margin-top:.4rem;">MODE 03</div>
+        <div class="big" style="font-size:1.8rem;color:var(--amber);">Execute</div>
+        <div class="hand" style="font-size:1.05rem;color:white;font-style:italic;line-height:1.4;margin:.4rem 0;">Full AI. When you<br>actually need speed.</div>
+        <div style="height:1px;background:var(--dim);margin:.6rem 0;"></div>
+        <div class="hand muted" style="font-size:.9rem;line-height:1.5;">Available, but never the default. You have to choose it consciously.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 10 — HMW ═══════════════════════════════════════════════════════ -->
+<section class="slide" id="s10" data-slide="10">
+  <div class="tag anim-up" id="s10-tag">the design questions I'm obsessing over.</div>
+
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:1rem;">
+    <div class="hmw-row anim-up" id="hmw1">
+      <span class="hmw-label">HMW A1 →</span>
+      <div class="hmw-text">make thinking first feel <em style="color:var(--teal2);font-style:normal;">faster</em> than opening AI?</div>
+    </div>
+    <div class="hmw-row anim-up" id="hmw2" style="animation-delay:.15s">
+      <span class="hmw-label" style="color:var(--lime);">HMW C4 ★ →</span>
+      <div class="hmw-text">design AI that asks questions <em style="color:var(--lime);font-style:normal;">before</em> it gives answers?</div>
+    </div>
+    <div class="hmw-row anim-up" id="hmw3" style="animation-delay:.3s">
+      <span class="hmw-label" style="color:var(--amber);">HMW D2 →</span>
+      <div class="hmw-text">make the slower path feel like the <em style="color:var(--amber);font-style:normal;">premium</em> experience?</div>
+    </div>
+    <div class="hmw-row anim-up" id="hmw4" style="animation-delay:.45s">
+      <span class="hmw-label" style="color:var(--teal2);">HMW B4 →</span>
+      <div class="hmw-text">celebrate when users think independently — so it feels like <em style="color:var(--teal2);font-style:normal;">winning?</em></div>
+    </div>
+
+    <div class="anim-up" id="s10-foot" style="margin-top:1.5rem;animation-delay:.6s">
+      <div class="hand" style="font-size:1rem;color:var(--gray);font-style:italic;">
+        (there are 16 total. these are the ones that keep me up at night.)
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 11 — WIP ═══════════════════════════════════════════════════════ -->
+<section class="slide" id="s11" data-slide="11">
+  <div class="hand anim-up" id="s11-tag" style="font-size:1.1rem;color:var(--gray);font-style:italic;">
+    Honest update on where this project lives.
+  </div>
+
+  <!-- WIP progress rail -->
+  <div class="wip-rail anim-up" id="wip-rail" style="margin-top:2rem;">
+    <div class="wip-step">
+      <div class="wip-dot done" id="wd1">✓</div>
+      <div class="wip-label done">D1<br>Discover</div>
+    </div>
+    <div class="wip-step">
+      <div class="wip-dot done" id="wd2">✓</div>
+      <div class="wip-label done">D2<br>Define</div>
+    </div>
+    <div class="wip-step">
+      <div class="wip-dot done" id="wd3">✓</div>
+      <div class="wip-label done">D3<br>Develop</div>
+    </div>
+    <div class="wip-step">
+      <div class="wip-dot here" id="wd4"></div>
+      <div class="wip-label here">D4<br>Design</div>
+      <div class="wip-here-label">← here</div>
+    </div>
+    <div class="wip-step">
+      <div class="wip-dot" id="wd5"></div>
+      <div class="wip-label">D5-6<br>Deliver</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;flex:1;margin-top:1.5rem;">
+    <div class="anim-right" id="s11-l" style="position:relative;padding:1.5rem;">
+      <canvas id="wip-l-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div class="hand" style="font-size:.85rem;color:var(--gray);letter-spacing:.08em;margin-bottom:1rem;">STILL TO DO</div>
+        <div style="display:flex;flex-direction:column;gap:.65rem;">
+          <div class="hand" style="font-size:1.05rem;"><span style="color:var(--gray)">→</span>  3 more interviews to close the research gap</div>
+          <div class="hand" style="font-size:1.05rem;"><span style="color:var(--gray)">→</span>  Hi-fi screens in Figma (just started)</div>
+          <div class="hand" style="font-size:1.05rem;"><span style="color:var(--gray)">→</span>  Prototype the 'think first' mechanic</div>
+          <div class="hand" style="font-size:1.05rem;"><span style="color:var(--gray)">→</span>  Usability test across all 4 user types</div>
+        </div>
+      </div>
+    </div>
+    <div class="anim-left" id="s11-r" style="position:relative;padding:1.5rem;">
+      <canvas id="wip-r-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+      <div style="position:relative;z-index:1;">
+        <div class="hand" style="font-size:.85rem;color:var(--teal2);letter-spacing:.08em;margin-bottom:1rem;">ALREADY DONE 🎉</div>
+        <div style="display:flex;flex-direction:column;gap:.65rem;">
+          <div class="hand" style="font-size:1.05rem;color:var(--teal2);"><span>✓</span>  51-response survey</div>
+          <div class="hand" style="font-size:1.05rem;color:var(--teal2);"><span>✓</span>  4 in-depth interviews</div>
+          <div class="hand" style="font-size:1.05rem;color:var(--teal2);"><span>✓</span>  4 personas + empathy maps</div>
+          <div class="hand" style="font-size:1.05rem;color:var(--teal2);"><span>✓</span>  16 How Might We questions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 12 — CLOSING ═══════════════════════════════════════════════════ -->
+<section class="slide" id="s12" data-slide="12">
+  <!-- Doodle people row at top -->
+  <div style="display:flex;justify-content:center;gap:2vw;margin-bottom:1rem;" id="s12-people">
+    <svg class="anim-pop" viewBox="0 0 80 100" width="80" style="animation-delay:.0s">
+      <circle cx="40" cy="32" r="24" fill="#0D1F1F" stroke="#0ABFA3" stroke-width="3"/>
+      <circle cx="33" cy="26" r="4" fill="#0ABFA3"/><circle cx="47" cy="26" r="4" fill="#0ABFA3"/>
+      <path d="M35 40 Q40 48 45 40" fill="none" stroke="#0ABFA3" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M28 56 C22 61 18 72 18 82 L62 82 C62 72 58 61 52 56 C46 51 43 49 40 49 C37 49 34 51 28 56Z" fill="#0D1F1F" stroke="#0ABFA3" stroke-width="2"/>
+    </svg>
+    <svg class="anim-pop" viewBox="0 0 80 100" width="88" style="animation-delay:.12s">
+      <circle cx="40" cy="32" r="26" fill="#0D2B0D" stroke="#84CC16" stroke-width="3"/>
+      <circle cx="33" cy="26" r="5" fill="#84CC16"/><circle cx="47" cy="26" r="5" fill="#84CC16"/>
+      <path d="M34 42 Q40 52 46 42" fill="none" stroke="#84CC16" stroke-width="3" stroke-linecap="round"/>
+      <text x="30" y="12" font-size="14">🎤</text>
+      <path d="M28 58 C22 63 18 74 18 84 L62 84 C62 74 58 63 52 58 C46 53 43 51 40 51 C37 51 34 53 28 58Z" fill="#0D2B0D" stroke="#84CC16" stroke-width="2.5"/>
+    </svg>
+    <svg class="anim-pop" viewBox="0 0 80 100" width="96" style="animation-delay:.05s">
+      <circle cx="40" cy="32" r="28" fill="#0D1B2B" stroke="#0ABFA3" stroke-width="4"/>
+      <circle cx="33" cy="25" r="5" fill="#0ABFA3"/><circle cx="47" cy="25" r="5" fill="#0ABFA3"/>
+      <path d="M34 44 Q40 56 46 44" fill="none" stroke="#0ABFA3" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M26 60 C20 66 16 78 16 88 L64 88 C64 78 60 66 54 60 C48 55 45 53 40 53 C35 53 32 55 26 60Z" fill="#0D1B2B" stroke="#0ABFA3" stroke-width="3"/>
+    </svg>
+    <svg class="anim-pop" viewBox="0 0 80 100" width="88" style="animation-delay:.18s">
+      <circle cx="40" cy="32" r="26" fill="#1A1200" stroke="#F59E0B" stroke-width="3"/>
+      <circle cx="33" cy="26" r="5" fill="#F59E0B"/><circle cx="47" cy="26" r="5" fill="#F59E0B"/>
+      <path d="M34 42 Q40 52 46 42" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+      <path d="M28 58 C22 63 18 74 18 84 L62 84 C62 74 58 63 52 58 C46 53 43 51 40 51 C37 51 34 53 28 58Z" fill="#1A1200" stroke="#F59E0B" stroke-width="2.5"/>
+    </svg>
+    <svg class="anim-pop" viewBox="0 0 80 100" width="80" style="animation-delay:.08s">
+      <circle cx="40" cy="32" r="24" fill="#0D1F1F" stroke="#0ABFA3" stroke-width="3"/>
+      <circle cx="33" cy="26" r="4" fill="#0ABFA3"/><circle cx="47" cy="26" r="4" fill="#0ABFA3"/>
+      <path d="M35 40 Q40 48 45 40" fill="none" stroke="#0ABFA3" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M28 56 C22 61 18 72 18 82 L62 82 C62 72 58 61 52 56 C46 51 43 49 40 49 C37 49 34 51 28 56Z" fill="#0D1F1F" stroke="#0ABFA3" stroke-width="2"/>
+    </svg>
+  </div>
+  <div class="hand anim-up" style="text-align:center;font-size:1rem;color:var(--gray);margin-bottom:.5rem;font-style:italic;">made by makers, for makers</div>
+
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <div class="hand anim-up" id="s12-pre" style="font-size:1.2rem;color:var(--teal2);font-style:italic;margin-bottom:.4rem;">That's the project.</div>
+    <div class="big anim-pop" id="s12-h" style="font-size:clamp(2rem,5vw,3.8rem);line-height:1.1;">
+      It's a work in progress<br>and so is my thinking.
+    </div>
+    <div class="big anim-up" id="s12-cta" style="font-size:clamp(1.3rem,2.5vw,2rem);color:var(--lime);margin-top:1rem;animation:pulse 2s infinite;">
+      Come talk to me after. 👇
+    </div>
+  </div>
+
+  <div class="cta-grid anim-up" id="s12-cards">
+    <div class="cta-card" style="border-top:3px solid var(--teal2)">
+      <p>If you've done research in this space</p>
+    </div>
+    <div class="cta-card" style="border-top:3px solid var(--amber)">
+      <p>If you use AI and feel guilty about it</p>
+    </div>
+    <div class="cta-card" style="border-top:3px solid var(--lime)">
+      <p>If you want to roast my UX decisions</p>
+    </div>
+    <div class="cta-card" style="border-top:3px solid var(--red)">
+      <p>If you know a better way to do this</p>
+    </div>
+  </div>
+</section>
+
+</div><!-- end #deck -->
+
+<!-- Navigation -->
+<div id="nav"></div>
+<div id="slide-counter">1 / 12</div>
+<div id="nav-arrows">
+  <button class="arr-btn" id="prev-btn" onclick="changeSlide(-1)">←</button>
+  <button class="arr-btn" id="next-btn" onclick="changeSlide(1)">→</button>
+</div>
+
+<script>
+// ── ROUGH.JS HELPER ────────────────────────────────────────────────────────
+function drawRough(canvasId, containerEl, strokeColor, fillColor, roughness = 2.5, fill = true) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !containerEl) return;
+  const rect = containerEl.getBoundingClientRect();
+  const w = rect.width || 200, h = rect.height || 150;
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  const rc = rough.canvas(canvas);
+  rc.rectangle(2, 2, w - 4, h - 4, {
+    stroke: strokeColor,
+    strokeWidth: 2.2,
+    roughness,
+    fill: fill ? fillColor : 'none',
+    fillStyle: 'solid',
+  });
+}
+
+function drawRoughSvg(svgEl, w, h, stroke, fill, roughness = 2.2) {
+  if (!svgEl) return;
+  svgEl.innerHTML = '';
+  svgEl.setAttribute('width', w);
+  svgEl.setAttribute('height', h);
+  const rc = rough.svg(svgEl);
+  const rect = rc.rectangle(2, 2, w - 4, h - 4, {
+    stroke,
+    strokeWidth: 2,
+    roughness,
+    fill,
+    fillStyle: 'solid',
+  });
+  svgEl.appendChild(rect);
+}
+
+// ── SLIDE SYSTEM ──────────────────────────────────────────────────────────
+let current = 1;
+const total = 12;
+
+function buildNav() {
+  const nav = document.getElementById('nav');
+  for (let i = 1; i <= total; i++) {
+    const d = document.createElement('div');
+    d.className = 'nav-dot' + (i === 1 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+}
+
+function goTo(n) {
+  if (n < 1 || n > total) return;
+  const prev = document.getElementById('s' + current);
+  current = n;
+  const next = document.getElementById('s' + current);
+
+  if (prev) { prev.classList.remove('active'); prev.classList.add('exit'); setTimeout(() => prev.classList.remove('exit'), 600); }
+  if (next) { next.classList.add('active'); animateSlide(current); }
+
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === n - 1));
+  document.getElementById('slide-counter').textContent = `${current} / ${total}`;
+}
+
+function changeSlide(dir) { goTo(current + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); changeSlide(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+});
+
+// Touch support
+let touchX = 0;
+document.addEventListener('touchstart', e => touchX = e.touches[0].clientX);
+document.addEventListener('touchend', e => {
+  const dx = touchX - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 50) changeSlide(dx > 0 ? 1 : -1);
+});
+
+// ── ANIMATIONS PER SLIDE ──────────────────────────────────────────────────
+function triggerAnims(slideEl, delay = 0) {
+  const els = slideEl.querySelectorAll('.anim-up, .anim-pop, .anim-right, .anim-left');
+  els.forEach((el, i) => {
+    const existingDelay = parseFloat(el.style.animationDelay || '0') * 1000;
+    setTimeout(() => el.classList.add('go'), delay + i * 80 + existingDelay);
+  });
+}
+
+function drawPaths(slideEl, delay = 200) {
+  setTimeout(() => {
+    slideEl.querySelectorAll('.path-draw').forEach((p, i) => {
+      setTimeout(() => p.classList.add('go'), i * 180);
+    });
+  }, delay);
+}
+
+function animateSlide(n) {
+  const s = document.getElementById('s' + n);
+  if (!s) return;
+
+  // Reset anims
+  s.querySelectorAll('.anim-up, .anim-pop, .anim-right, .anim-left').forEach(el => el.classList.remove('go'));
+  s.querySelectorAll('.path-draw').forEach(p => p.classList.remove('go'));
+
+  setTimeout(() => {
+    triggerAnims(s, 0);
+
+    if (n === 1) {
+      drawPaths(s, 300);
+      // draw rough badge
+      setTimeout(() => {
+        const badge = document.getElementById('s1-badge');
+        const c = document.getElementById('badge-canvas');
+        if (badge && c) {
+          const w = badge.offsetWidth, h = badge.offsetHeight;
+          c.width = w; c.height = h;
+          const rc = rough.canvas(c);
+          rc.rectangle(2, 2, w-4, h-4, { stroke:'#0D9488', strokeWidth:2.5, roughness:2.5, fill:'#0D1F1F', fillStyle:'solid' });
+        }
+      }, 600);
+    }
+
+    if (n === 2) { drawPaths(s, 400); }
+
+    if (n === 3) {
+      setTimeout(() => {
+        const lEl = document.getElementById('s3-left');
+        const rEl = document.getElementById('s3-right');
+        const fEl = document.getElementById('s3-foot').parentElement || document.getElementById('foot-canvas')?.parentElement;
+
+        drawRough('contra-l-canvas', lEl, '#0ABFA3', '#0D1F1F', 2.5);
+        drawRough('contra-r-canvas', rEl, '#F59E0B', '#1A1400', 2.5);
+
+        const fc = document.getElementById('foot-canvas');
+        if (fc) {
+          const par = fc.parentElement;
+          const w = par.offsetWidth, h = par.offsetHeight;
+          fc.width = w; fc.height = h;
+          const rc = rough.canvas(fc);
+          rc.rectangle(2,2,w-4,h-4,{stroke:'#84CC16',strokeWidth:2,roughness:3,fill:'#0D1F0D',fillStyle:'solid'});
+        }
+      }, 200);
+    }
+
+    if (n === 5) {
+      setTimeout(() => {
+        [['seg1-canvas','seg1','#0ABFA3','#0D1F1F'],
+         ['seg2-canvas','seg2','#F59E0B','#1A1200'],
+         ['seg3-canvas','seg3','#84CC16','#0D2B0D'],
+         ['seg4-canvas','seg4','#EF4444','#1F0D0D']
+        ].forEach(([cid, eid, stroke, fill]) => {
+          drawRough(cid, document.getElementById(eid), stroke, fill, 2.8);
+        });
+      }, 100);
+    }
+
+    if (n === 7) {
+      setTimeout(() => {
+        const arr1 = document.querySelector('#flow-svg #arr1');
+        const arr2 = document.querySelector('#flow-svg #arr2');
+        if (arr1) arr1.classList.add('go');
+        setTimeout(() => {
+          if (arr2) arr2.classList.add('go');
+          // reveal arrowheads
+          document.querySelectorAll('#flow-svg polygon').forEach(p => p.setAttribute('opacity','1'));
+        }, 800);
+      }, 400);
+    }
+
+    if (n === 9) {
+      setTimeout(() => {
+        [['mode1-canvas','mode1','#0ABFA3','#0D1F1F'],
+         ['mode2-canvas','mode2','#84CC16','#0D2B0D'],
+         ['mode3-canvas','mode3','#F59E0B','#1A1200']
+        ].forEach(([cid, eid, stroke, fill]) => {
+          drawRough(cid, document.getElementById(eid), stroke, fill, 2.5);
+        });
+      }, 100);
+    }
+
+    if (n === 11) {
+      setTimeout(() => {
+        const lEl = document.getElementById('s11-l');
+        const rEl = document.getElementById('s11-r');
+        drawRough('wip-l-canvas', lEl, '#4B5563', '#111', 2.5);
+        drawRough('wip-r-canvas', rEl, '#0ABFA3', '#0D1F1F', 2.5);
+      }, 200);
+
+      // Animate wip dots
+      setTimeout(() => {
+        ['wd1','wd2','wd3'].forEach((id, i) => {
+          setTimeout(() => {
+            const d = document.getElementById(id);
+            d.style.transform = 'scale(1.3)';
+            setTimeout(() => d.style.transform = '', 300);
+          }, i * 200);
+        });
+      }, 400);
+    }
+  }, 50);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+buildNav();
+const first = document.getElementById('s1');
+first.classList.add('active');
+animateSlide(1);
+
+// ── LIVE REDRAW on resize ─────────────────────────────────────────────────
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => animateSlide(current), 200);
+});
+</script>
+</body>
+</html>
